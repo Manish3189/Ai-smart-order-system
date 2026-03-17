@@ -4,11 +4,15 @@ import com.inventory.product.dto.ProductDTO;
 import com.inventory.product.exception.ProductNotFoundException;
 import com.inventory.product.model.Product;
 import com.inventory.product.repository.ProductRepository;
+import com.inventory.product.response.PaginatedResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -31,8 +35,8 @@ public class ProductService {
     }
 
     //list of product
-    public List<ProductDTO> getAllProducts(){
-        List<Product> products=productRepository.findAll();
+    public PaginatedResponse<ProductDTO> getAllProducts(int page, int size,String sortBy,String direction){
+//        List<Product> products=productRepository.findAll();
 //        List<ProductDTO> dtoList=new ArrayList<>();
 //
 //        for(Product product:products){
@@ -44,9 +48,23 @@ public class ProductService {
 //
 //            dtoList.add(dto);
 //        }
-        return products.stream()
+        Sort sort=direction.equalsIgnoreCase("asc") ?
+                Sort.by(sortBy).ascending():
+                Sort.by(sortBy).descending();
+
+        Pageable pageable = PageRequest.of(page,size,sort);
+        Page<Product> productPage = productRepository.findAll(pageable);
+        List<ProductDTO> dtoList=productPage.getContent()
+                .stream()
                 .map(product -> modelMapper.map(product,ProductDTO.class))
                 .toList();
+
+        return new PaginatedResponse<>(
+                dtoList,
+                productPage.getNumber(),
+                productPage.getTotalPages(),
+                productPage.getTotalElements()
+        );
     }
 
     //get the product by id

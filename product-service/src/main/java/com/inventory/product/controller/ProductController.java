@@ -3,15 +3,15 @@ package com.inventory.product.controller;
 import com.inventory.product.dto.ProductDTO;
 import com.inventory.product.model.Product;
 import com.inventory.product.response.ApiResponse;
+import com.inventory.product.response.PaginatedResponse;
 import com.inventory.product.service.ProductService;
 import jakarta.validation.Valid;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/products")
@@ -24,11 +24,16 @@ public class ProductController {
     private ModelMapper modelMapper;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<ProductDTO>>> getAllProducts(){
-        List<ProductDTO> products=productService.getAllProducts();
+    public ResponseEntity<ApiResponse<PaginatedResponse<ProductDTO>>> getAllProducts(
+            @RequestParam int page,
+            @RequestParam int size,
+            @RequestParam String sortBy,
+            @RequestParam String direction) {
 
-        ApiResponse<List<ProductDTO>> response=
-                new ApiResponse<>(true,"Product fetch succesfully",products);
+        PaginatedResponse<ProductDTO> data =productService.getAllProducts(page, size,sortBy,direction);
+
+        ApiResponse<PaginatedResponse<ProductDTO>> response=
+                new ApiResponse<>(true,"Product fetch succesfully",data);
         return ResponseEntity.ok(response);
     }
 
