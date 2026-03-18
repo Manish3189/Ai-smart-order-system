@@ -5,8 +5,12 @@ import com.inventory.product.model.Product;
 import com.inventory.product.response.ApiResponse;
 import com.inventory.product.response.PaginatedResponse;
 import com.inventory.product.service.ProductService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.modelmapper.ModelMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
@@ -17,20 +21,29 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/products")
 public class ProductController {
 
+    private static final Logger logger= LoggerFactory.getLogger(ProductController.class);
+
     @Autowired
     private ProductService productService;
 
     @Autowired
     private ModelMapper modelMapper;
 
+    @Operation(summary = "Fetch all products with filters")
     @GetMapping
     public ResponseEntity<ApiResponse<PaginatedResponse<ProductDTO>>> getAllProducts(
             @RequestParam int page,
             @RequestParam int size,
             @RequestParam String sortBy,
-            @RequestParam String direction) {
+            @RequestParam String direction,
+            @RequestParam(required = false)String name,
+            @RequestParam(required = false)Double minPrice ,
+            @RequestParam(required = false) Double maxPrice)
 
-        PaginatedResponse<ProductDTO> data =productService.getAllProducts(page, size,sortBy,direction);
+    {
+        logger.info("Get/products Apt called");
+
+        PaginatedResponse<ProductDTO> data =productService.getAllProducts(page, size,sortBy,direction,name,minPrice,maxPrice);
 
         ApiResponse<PaginatedResponse<ProductDTO>> response=
                 new ApiResponse<>(true,"Product fetch succesfully",data);
