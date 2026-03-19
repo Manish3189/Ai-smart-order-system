@@ -122,7 +122,9 @@ public class ProductService {
     }
 
     public void  deleteProduct(Long id ){
-        productRepository.deleteById(id);
+        Product product = productRepository.findById(id)
+                .orElseThrow(()-> new ProductNotFoundException("Product not found with id :"+ id));
+        productRepository.delete(product);
     }
 
 }
