@@ -1,16 +1,20 @@
 package com.inventory.product.service;
 
-import com.inventory.product.dto.ProductDTO;
+import com.inventory.product.config.ProductMapper;
+import com.inventory.product.dto.ProductRequestDTo;
+import com.inventory.product.dto.ProductResponseDTO;
 import com.inventory.product.exception.ProductNotFoundException;
 import com.inventory.product.model.Product;
 import com.inventory.product.repository.ProductRepository;
 import com.inventory.product.response.PaginatedResponse;
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -25,21 +29,27 @@ public class ProductService {
     private ProductRepository productRepository;
 
     @Autowired
-    private ModelMapper modelMapper;
+    private ProductMapper productMapper;
 
     //save the product
-    public Product saveProduct(ProductDTO dto){
-        Product product = modelMapper.map(dto,Product.class);
+    @CacheEvict(value = "products", allEntries = true)
+    public ProductResponseDTO saveProduct(@Valid ProductRequestDTo dto){
+//        Product product = modelMapper.map(dto,Product.class);
+////        product.setName(dto.getName());;
+////        product.setPrice(dto.getPrice());
+////        product.setQuantity(dto.getQuantity());
+//
+//        return productRepository.save(product);
 
-//        product.setName(dto.getName());;
-//        product.setPrice(dto.getPrice());
-//        product.setQuantity(dto.getQuantity());
+        Product product = productMapper.toEntity(dto);
+        Product savedProduct = productRepository.save(product);
 
-        return productRepository.save(product);
+        return productMapper.toDTO(savedProduct);
     }
 
-    //list of product
-    public PaginatedResponse<ProductDTO> getAllProducts(
+    ////list of product
+    @Cacheable(value = "product")
+    public PaginatedResponse<ProductResponseDTO> getAllProducts(
             int page,
             int size,
             String sortBy,
@@ -74,7 +84,7 @@ public class ProductService {
 
         Pageable pageable = PageRequest.of(page,size,sort);
         Page<Product> productPage;
-        //Filtering logic
+////        Filtering logic
 
         if(name!=null && minPrice!=null && maxprice!=null){
             productPage= productRepository.findByNameContainingIgnoreCase(name,pageable);
@@ -84,12 +94,12 @@ public class ProductService {
             productPage=productRepository.findByPriceBetween(minPrice,maxprice,pageable);
         }
         else {
-            productPage=productRepository.findAll(pageable);
+            productPage = productRepository.findAllWithCategory(pageable);
         }
 
-        List<ProductDTO> dtoList=productPage.getContent()
+        List<ProductResponseDTO > dtoList=productPage.getContent()
                 .stream()
-                .map(product -> modelMapper.map(product,ProductDTO.class))
+                .map(productMapper::toDTO)
                 .toList();
 
         return new PaginatedResponse<>(
@@ -103,10 +113,11 @@ public class ProductService {
     //get the product by id
     public Product getProductByID(Long id){
         return productRepository.findById(id)
-                .orElseThrow( ()-> new ProductNotFoundException("Product Not Found"));
+                .orElseThrow( ()-> new ProductNotFoundException("Product Not Found with id:"+ id));
     }
 
     //update the product
+    @CacheEvict(value = "products", allEntries = true)
     public Product updateProduct(Long id ,Product product){
 
         Product existingProduct = productRepository.findById(id).orElse(null);
@@ -121,6 +132,8 @@ public class ProductService {
         return null;
     }
 
+    /// delete the product
+    @CacheEvict(value = "products", allEntries = true)
     public void  deleteProduct(Long id ){
         Product product = productRepository.findById(id)
                 .orElseThrow(()-> new ProductNotFoundException("Product not found with id :"+ id));

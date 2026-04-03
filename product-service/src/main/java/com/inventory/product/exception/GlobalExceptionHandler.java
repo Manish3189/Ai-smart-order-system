@@ -36,4 +36,11 @@ public class GlobalExceptionHandler {
                 new ApiResponse<>(false,"Validation failded",errors);
         return new ResponseEntity<>(response,HttpStatus.BAD_REQUEST);
     }
+
+//    @ExceptionHandler(Exception.class)
+//    public ResponseEntity<ApiResponse<Object>> handleGenericException(Exception ex){
+//        ApiResponse<Object> response=
+//                new ApiResponse<>(false,"Something went wrong",null);
+//        return new ResponseEntity<>(response,HttpStatus.INTERNAL_SERVER_ERROR);
+//    }
 }
